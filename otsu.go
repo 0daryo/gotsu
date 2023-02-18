@@ -1,6 +1,7 @@
 package gotsu
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -12,7 +13,7 @@ func Binarize(r io.Reader, w io.Writer) error {
 	// decode image
 	img, _, err := image.Decode(r)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to decode image: %v", err)
 	}
 
 	// create gray scale image
@@ -38,7 +39,10 @@ func Binarize(r io.Reader, w io.Writer) error {
 		}
 	}
 
-	return jpeg.Encode(w, binary, nil)
+	if err := jpeg.Encode(w, binary, nil); err != nil {
+		return fmt.Errorf("failed to encode image: %v", err)
+	}
+	return nil
 }
 
 // getOtsuThreshold returns the threshold value for binarization
