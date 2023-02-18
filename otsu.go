@@ -8,7 +8,7 @@ import (
 	"math"
 )
 
-func otsuBinarization(r io.Reader, w io.Writer) error {
+func Binarize(r io.Reader, w io.Writer) error {
 	// decode image
 	img, _, err := image.Decode(r)
 	if err != nil {
