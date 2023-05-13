@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"image/png"
 	"io"
 	"math"
 )
@@ -40,6 +41,47 @@ func Binarize(r io.Reader, w io.Writer) error {
 	}
 
 	if err := jpeg.Encode(w, binary, nil); err != nil {
+		return fmt.Errorf("failed to encode image: %v", err)
+	}
+	return nil
+}
+
+func BinarizePng(r io.Reader, w io.Writer) error {
+	// decode image
+	img, err := png.Decode(r)
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %v", err)
+	}
+
+	// create gray scale image
+	gray := image.NewGray(img.Bounds())
+	for x := 0; x < img.Bounds().Max.X; x++ {
+		for y := 0; y < img.Bounds().Max.Y; y++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			grayColor := color.Gray16{uint16(0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b))}
+			gray.Set(x, y, grayColor)
+		}
+	}
+
+	// apply otsu binarization
+	threshold := getOtsuThreshold(gray)
+	binary := image.NewRGBA64(gray.Bounds())
+	for x := 0; x < gray.Bounds().Max.X; x++ {
+		for y := 0; y < gray.Bounds().Max.Y; y++ {
+			_, _, _, a := img.At(x, y).RGBA()
+			if gray.GrayAt(x, y).Y > threshold {
+				binary.Set(x, y, color.RGBA64{65535, 65535, 65535, uint16(a)})
+			} else {
+				if a != 0 {
+					binary.Set(x, y, color.RGBA64{0, 0, 0, uint16(a)})
+				} else {
+					binary.Set(x, y, color.RGBA64{0, 0, 0, 0})
+				}
+			}
+		}
+	}
+
+	if err := png.Encode(w, binary); err != nil {
 		return fmt.Errorf("failed to encode image: %v", err)
 	}
 	return nil
